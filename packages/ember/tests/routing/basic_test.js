@@ -839,6 +839,46 @@ test("A redirection hook is provided", function() {
   equal(Ember.$("h3:contains(Hours)", "#qunit-fixture").length, 1, "The home template was rendered");
 });
 
+test("Transitioning to routes customized with dot notation is possible", function() {
+  expect(1);
+
+  Ember.TEMPLATES.index = compile("<div>Index</div>");
+  Ember.TEMPLATES.application = compile("<h1>Home</h1><div class='main'>{{outlet}}</div>");
+  Ember.TEMPLATES.top = compile("<div class='middle'>{{outlet}}</div>");
+  Ember.TEMPLATES['foo/bar'] = compile("<div class='bottom'>{{outlet}}</div>");
+
+  Router.map(function(match) {
+    match("/top").to("top", function(match) {
+      match("/middle").to("foo.bar", function(match) {
+        match("/bottom").to("baz.bang");
+      });
+    });
+  });
+
+  App.IndexRoute = Ember.Route.extend({
+    events: {
+      showFooBar: function() {
+        this.transitionTo('foo.bar');
+      }
+    }
+  });
+
+  App.FooBarRoute = Ember.Route.extend({
+    renderTemplate: function() {
+      ok(true, "FooBarRoute was called");
+      return this._super.apply(this, arguments);
+    }
+  });
+
+  bootApplication();
+
+  Ember.run(function() {
+    router.handleURL("/");
+    router.send('showFooBar');
+  });
+
+});
+
 test("Generated names can be customized when providing routes with dot notation", function() {
   expect(3);
 
